@@ -1,0 +1,2 @@
+whisper_model: base
+flask_port: 8000

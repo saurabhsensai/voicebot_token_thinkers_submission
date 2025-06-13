@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual Speech-to-Text</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .language-select {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .language-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .mic-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .mic-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(255, 107, 107, 0.4);
+        }
+
+        .mic-button.recording {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            color: #666;
+            min-height: 25px;
+        }
+
+        .status.listening {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .status.processing {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .results {
+            display: grid;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .result-box {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+        }
+
+        .result-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .result-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .original-text {
+            border-left-color: #ff6b6b;
+        }
+
+        .translated-text {
+            border-left-color: #4ecdc4;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #fab1a0;
+        }
+
+        .history {
+            margin-top: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .clear-button {
+            background: #636e72;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .clear-button:hover {
+            background: #2d3436;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mic-button {
+                width: 70px;
+                height: 70px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Multilingual Speech-to-Text</h1>
+        
+        <div class="controls">
+            <select class="language-select" id="languageSelect">
+                <option value="auto">Auto-detect Language</option>
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+                <option value="de-DE">German</option>
+                <option value="it-IT">Italian</option>
+                <option value="pt-BR">Portuguese (Brazil)</option>
+                <option value="ru-RU">Russian</option>
+                <option value="ja-JP">Japanese</option>
+                <option value="ko-KR">Korean</option>
+                <option value="zh-CN">Chinese (Mandarin)</option>
+                <option value="ar-SA">Arabic</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="th-TH">Thai</option>
+                <option value="vi-VN">Vietnamese</option>
+                <option value="nl-NL">Dutch</option>
+                <option value="sv-SE">Swedish</option>
+                <option value="no-NO">Norwegian</option>
+                <option value="da-DK">Danish</option>
+                <option value="fi-FI">Finnish</option>
+            </select>
+            
+            <button class="mic-button" id="micButton">
+                🎤
+            </button>
+        </div>
+        
+        <div class="status" id="status">Click the microphone to start recording</div>
+        
+        <div class="results" id="results"></div>
+        
+        <div class="history" id="history">
+            <button class="clear-button" id="clearHistory" style="display: none;">Clear History</button>
+        </div>
+    </div>
+
+    <script>
+        class SpeechToTextApp {
+            constructor() {
+                this.recognition = null;
+                this.isRecording = false;
+                this.history = JSON.parse(localStorage.getItem('sttHistory') || '[]');
+                
+                this.initElements();
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.loadHistory();
+            }
+
+            initElements() {
+                this.micButton = document.getElementById('micButton');
+                this.status = document.getElementById('status');
+                this.results = document.getElementById('results');
+                this.languageSelect = document.getElementById('languageSelect');
+                this.historyDiv = document.getElementById('history');
+                this.clearButton = document.getElementById('clearHistory');
+            }
+
+            initSpeechRecognition() {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    this.showError('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.');
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                
+                this.recognition.continuous = false;
+                this.recognition.interimResults = true;
+                this.recognition.maxAlternatives = 1;
+                
+                this.recognition.onstart = () => {
+                    this.isRecording = true;
+                    this.micButton.classList.add('recording');
+                    this.micButton.innerHTML = '🔴';
+                    this.updateStatus('Listening...', 'listening');
+                };
+
+                this.recognition.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    if (finalTranscript) {
+                        this.processTranscript(finalTranscript);
+                    } else if (interimTranscript) {
+                        this.updateStatus(`Hearing: "${interimTranscript}"`, 'listening');
+                    }
+                };
+
+                this.recognition.onerror = (event) => {
+                    this.showError(`Speech recognition error: ${event.error}`);
+                    this.stopRecording();
+                };
+
+                this.recognition.onend = () => {
+                    this.stopRecording();
+                };
+            }
+
+            bindEvents() {
+                this.micButton.addEventListener('click', () => {
+                    if (this.isRecording) {
+                        this.recognition.stop();
+                    } else {
+                        this.startRecording();
+                    }
+                });
+
+                this.clearButton.addEventListener('click', () => {
+                    this.clearHistory();
+                });
+
+                // Handle language selection
+                this.languageSelect.addEventListener('change', () => {
+                    if (this.recognition) {
+                        const selectedLang = this.languageSelect.value;
+                        if (selectedLang !== 'auto') {
+                            this.recognition.lang = selectedLang;
+                        }
+                    }
+                });
+            }
+
+            startRecording() {
+                if (!this.recognition) {
+                    this.showError('Speech recognition not available');
+                    return;
+                }
+
+                this.clearError();
+                const selectedLang = this.languageSelect.value;
+                
+                if (selectedLang !== 'auto') {
+                    this.recognition.lang = selectedLang;
+                } else {
+                    this.recognition.lang = '';
+                }
+
+                try {
+                    this.recognition.start();
+                } catch (error) {
+                    this.showError('Could not start speech recognition. Please try again.');
+                }
+            }
+
+            stopRecording() {
+                this.isRecording = false;
+                this.micButton.classList.remove('recording');
+                this.micButton.innerHTML = '🎤';
+                this.updateStatus('Click the microphone to start recording');
+            }
+
+            async processTranscript(text) {
+                this.updateStatus('Processing and translating...', 'processing');
+                
+                try {
+                    const response = await fetch('/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            source_lang: 'auto'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.displayResults(data);
+                        this.addToHistory(data);
+                        this.updateStatus('Transcription complete!');
+                    } else {
+                        throw new Error(data.error || 'Translation failed');
+                    }
+                } catch (error) {
+                    this.showError(`Translation error: ${error.message}`);
+                    this.updateStatus('Click the microphone to start recording');
+                }
+            }
+
+            displayResults(data) {
+                const isEnglish = data.source_language === 'en';
+                
+                this.results.innerHTML = `
+                    <div class="result-box original-text">
+                        <h3>🎤 Original Speech ${isEnglish ? '(English)' : `(${data.source_language.toUpperCase()})`}</h3>
+                        <div class="result-text">${data.original_text}</div>
+                    </div>
+                    ${!isEnglish ? `
+                        <div class="result-box translated-text">
+                            <h3>🌍 English Translation</h3>
+                            <div class="result-text">${data.translated_text}</div>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            addToHistory(data) {
+                const historyItem = {
+                    timestamp: new Date().toLocaleString(),
+                    original: data.original_text,
+                    translated: data.translated_text,
+                    language: data.source_language
+                };
+
+                this.history.unshift(historyItem);
+                
+                // Keep only last 10 items
+                if (this.history.length > 10) {
+                    this.history = this.history.slice(0, 10);
+                }
+
+                localStorage.setItem('sttHistory', JSON.stringify(this.history));
+                this.loadHistory();
+            }
+
+            loadHistory() {
+                if (this.history.length === 0) {
+                    this.clearButton.style.display = 'none';
+                    return;
+                }
+
+                this.clearButton.style.display = 'block';
+                
+                const historyHTML = this.history.map(item => `
+                    <div class="history-item">
+                        <small style="color: #666; font-size: 12px;">${item.timestamp} - ${item.language.toUpperCase()}</small>
+                        <div style="margin-top: 5px;"><strong>Original:</strong> ${item.original}</div>
+                        ${item.language !== 'en' ? `<div style="margin-top: 5px;"><strong>English:</strong> ${item.translated}</div>` : ''}
+                    </div>
+                `).join('');
+
+                this.historyDiv.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #333;">Recent Transcriptions</h3>
+                    ${historyHTML}
+                    <button class="clear-button" id="clearHistory">Clear History</button>
+                `;
+
+                // Re-bind clear button event
+                document.getElementById('clearHistory').addEventListener('click', () => {
+                    this.clearHistory();
+                });
+            }
+
+            clearHistory() {
+                this.history = [];
+                localStorage.removeItem('sttHistory');
+                this.historyDiv.innerHTML = '';
+                this.clearButton.style.display = 'none';
+            }
+
+            updateStatus(message, className = '') {
+                this.status.textContent = message;
+                this.status.className = `status ${className}`;
+            }
+
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = message;
+                
+                this.clearError();
+                this.results.insertBefore(errorDiv, this.results.firstChild);
+            }
+
+            clearError() {
+                const existingError = this.results.querySelector('.error');
+                if (existingError) {
+                    existingError.remove();
+                }
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SpeechToTextApp();
+        });
+    </script>
+</body>
+</html>
