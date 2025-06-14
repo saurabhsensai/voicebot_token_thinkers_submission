@@ -19,6 +19,7 @@ def invoke_bedrock_agent(agent_id, alias_id, session_id, prompt, region='us-west
                 chunk = event['chunk']
                 completion += chunk['bytes'].decode('utf-8')
         
+        
         return completion
     
     except Exception as e:
