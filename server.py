@@ -1,58 +1,48 @@
-from flask import Flask, render_template, request, jsonify
-from googletrans import Translator
-import logging
+import boto3
+import json
+import base64
 
-app = Flask(__name__)
-translator = Translator()
+# Initialize Bedrock client
+bedrock = boto3.client(
+    service_name='bedrock-runtime',
+    region_name='us-west-2'  # Replace with your region
+)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def transcribe_audio(audio_file_path):
+    # Read and encode the audio file
+    with open(audio_file_path, 'rb') as audio_file:
+        audio_data = audio_file.read()
+        encoded_audio = base64.b64encode(audio_data).decode('utf-8')
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    # Prepare the payload for Whisper model
+    body = json.dumps({
+        "audio": encoded_audio,
+        "modelId": "openai.whisper-large-v3-turbo"  # Replace with your model ID
+        # Optional parameters: language, task (transcribe/translate), etc.
+        # "language": "en",  # Specify if known, e.g., "en" for English
+        # "task": "transcribe"  # or "translate" for translation to English
+    })
 
-@app.route('/translate', methods=['POST'])
-def translate_text():
     try:
-        data = request.get_json()
-        text = data.get('text', '')
-        source_lang = data.get('source_lang', 'auto')
-        
-        if not text.strip():
-            return jsonify({'error': 'No text provided'}), 400
-        
-        # Detect language if auto
-        if source_lang == 'auto':
-            detected = translator.detect(text)
-            source_lang = detected.lang
-            confidence = detected.confidence
-            logger.info(f"Detected language: {source_lang} (confidence: {confidence})")
-        
-        # Translate to English
-        if source_lang == 'en':
-            translated_text = text
-            logger.info("Text is already in English")
-        else:
-            result = translator.translate(text, src=source_lang, dest='en')
-            translated_text = result.text
-            logger.info(f"Translated from {source_lang} to English")
-        
-        return jsonify({
-            'original_text': text,
-            'translated_text': translated_text,
-            'source_language': source_lang,
-            'success': True
-        })
-        
+        # Invoke the model
+        response = bedrock.invoke_model(
+            modelId='openai.whisper-large-v3-turbo',  # Replace with your model ID
+            body=body
+        )
+
+        # Parse the response
+        result = json.loads(response['body'].read().decode('utf-8'))
+        transcription = result.get('text', '')
+        return transcription
+
     except Exception as e:
-        logger.error(f"Translation error: {str(e)}")
-        return jsonify({'error': f'Translation failed: {str(e)}'}), 500
+        print(f"Error: {str(e)}")
+        return None
 
-@app.route('/health')
-def health_check():
-    return jsonify({'status': 'healthy', 'service': 'multilingual-stt'})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# Example usage
+audio_file = "test.mp3"  # Replace with your audio file path
+transcription = transcribe_audio(audio_file)
+if transcription:
+    print("Transcription:", transcription)
+else:
+    print("Transcription failed.")
