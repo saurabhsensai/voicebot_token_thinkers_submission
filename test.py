@@ -21,6 +21,7 @@ class BedrockAgentClient:
             'message_count': 0
         }
         
+        
         return session_id
     
     def invoke_agent(self, agent_id, agent_alias_id, input_text, session_id=None):
