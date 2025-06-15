@@ -18,9 +18,6 @@ def transcribe_audio(audio_file_path):
     body = json.dumps({
         "audio": encoded_audio,
         "modelId": "openai.whisper-large-v3-turbo"  # Replace with your model ID
-        # Optional parameters: language, task (transcribe/translate), etc.
-        # "language": "en",  # Specify if known, e.g., "en" for English
-        # "task": "transcribe"  # or "translate" for translation to English
     })
 
     try:
