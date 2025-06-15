@@ -1,2 +1,4 @@
-whisper_model: base
-flask_port: 8000
+aws:
+  region: us-west-2
+  agent_id: ZWEWOFXUXL
+  agent_alias_id: 04RC7QNSWZ

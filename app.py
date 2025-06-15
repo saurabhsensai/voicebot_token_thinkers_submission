@@ -70,12 +70,15 @@ class BedrockAgentClient:
                 'error': True
             }
 
-# Initialize the Bedrock client
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+AGENT_ID = os.getenv("AGENT_ID")
+AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID")
+
 agent_client = BedrockAgentClient()
 
-# Your agent configuration
-AGENT_ID = "P9MZKBN1GL"
-AGENT_ALIAS_ID = "T8EFUEYJH5"
 
 @app.route('/')
 def index():
