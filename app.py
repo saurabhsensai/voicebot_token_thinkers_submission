@@ -37,6 +37,7 @@ class BedrockAgentClient:
             session_id = self.create_new_session()
        
         try:
+            
             response = self.client.invoke_agent(
                 agentId=agent_id,
                 agentAliasId=agent_alias_id,
