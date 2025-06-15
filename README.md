@@ -41,7 +41,7 @@ bash
 Copy
 Edit
 python app.py
-The app will start a local Flask server. Visit http://127.0.0.1:5000 in your browser.
+
 
 
 🧪 Testing
@@ -55,8 +55,8 @@ python test.py
 🧠 Technologies Used
 Python
 Flask
-SpeechRecognition / PyDub
-OpenAI API or similar LLM (configurable)
+SpeechRecognition 
+AWS API or similar LLM (configurable)
 HTML/CSS/JavaScript (for UI)
 
 🛡️ License
